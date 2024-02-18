@@ -487,9 +487,28 @@ export class EnhancedJournalSheet extends JournalPageSheet {
         let relationships = {};
         for (let item of (this.object.flags['monks-enhanced-journal']?.relationships || [])) {
             let entity = item.uuid ? await fromUuid(item.uuid) : game.journal.get(item.id);
-            if (!(entity instanceof JournalEntry || entity instanceof JournalEntryPage))
-                continue;
-            if (entity && entity.testUserPermission(game.user, "LIMITED") && (game.user.isGM || !item.hidden)) {
+            if (!(entity instanceof JournalEntry || entity instanceof JournalEntryPage)) {
+                if (game.user.isGM) {
+                    console.log(item);
+                    let type = item.type;
+
+                    item.name = "DEFUNCT/INVALID";
+                    item.img = `modules/monks-enhanced-journal/assets/${type}.png`;
+                    item.shoptype = "";
+                    item.role = "";
+                    item.type = type;
+
+                    
+                    if (!relationships[type])
+                        relationships[type] = {
+                            type: type,
+                            name: type && (game.i18n.translations.MonksEnhancedJournal || game.i18n._fallback.MonksEnhancedJournal || {})[type?.toLowerCase()] ? i18n(`MonksEnhancedJournal.${type?.toLowerCase()}`) : i18n("MonksEnhancedJournal.Unknown"),
+                            documents: []
+                        };
+
+                    relationships[type].documents.push(item);
+                }
+            } else if (entity && entity.testUserPermission(game.user, "LIMITED") && (game.user.isGM || !item.hidden)) {
                 let page = (entity instanceof JournalEntryPage ? entity : entity.pages.contents[0]);
                 MonksEnhancedJournal.fixType(page);
                 let type = getProperty(page, "flags.monks-enhanced-journal.type");
